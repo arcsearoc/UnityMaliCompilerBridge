@@ -28,7 +28,12 @@ public class MaliCompilerWindow : EditorWindow
         {
             var window = GetWindow<MaliCompilerWindow>();
             window.selectedShader = shader;
-            window.CompileShader();
+            var result = window.CompileShader();
+            if (result.isSuccess)
+            {
+                unityCompiledVertexCode = result.vertexShader;
+                unityCompiledFragmentCode = result.fragmentShader;
+            }
         }
         else
         {
@@ -56,8 +61,8 @@ public class MaliCompilerWindow : EditorWindow
     };
     
     // Unity编译后代码输入
-    private string unityCompiledVertexCode = "";
-    private string unityCompiledFragmentCode = "";
+    private static string unityCompiledVertexCode = "";
+    private static string unityCompiledFragmentCode = "";
     
     // 编译状态
     private bool isCompiling = false;
@@ -81,6 +86,8 @@ public class MaliCompilerWindow : EditorWindow
     
     private void OnEnable()
     {
+        unityCompiledVertexCode = string.Empty;
+        unityCompiledFragmentCode = string.Empty;
         config = MaliCompilerConfig.Load();
         selectedGPUIndex = Array.IndexOf(gpuModels, config.selectedGPUModel);
         if (selectedGPUIndex < 0) selectedGPUIndex = 4;

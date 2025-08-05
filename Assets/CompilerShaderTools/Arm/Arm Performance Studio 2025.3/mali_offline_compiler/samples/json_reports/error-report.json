@@ -1,0 +1,33 @@
+{
+    "schema": {
+        "name": "error",
+        "version": 0
+    },
+    "producer": {
+        "name": "Mali Offline Compiler",
+        "version": [7, 2, 0],
+        "build": "624fbd",
+        "documentation": "https://developer.arm.com/mobile-studio/"
+    },
+    "shaders": [
+        {
+            "filename": "./samples/opengles/shader.frag",
+            "hardware": {
+                "architecture": "Valhall",
+                "core": "Mali-G78",
+                "revision": "r1p1"
+            },
+            "driver": "r25p0-00rel0",
+            "shader": {
+                "api": "OpenGL ES",
+                "type": "Fragment"
+            },
+            "warnings": [],
+            "errors": [
+                "0:50: L0001: Expected token ';', found 'float'",
+                "0:53: L0002: Undeclared variable 'v'",
+                "0:54: L0002: Undeclared variable 'vertical'"
+            ]
+        }
+    ]
+}

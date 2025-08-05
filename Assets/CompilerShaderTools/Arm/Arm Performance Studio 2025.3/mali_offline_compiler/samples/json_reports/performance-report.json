@@ -1,0 +1,184 @@
+{
+    "schema": {
+        "name": "performance",
+        "version": 0
+    },
+    "producer": {
+        "name": "Mali Offline Compiler",
+        "version": [7, 2, 0],
+        "build": "624fbd",
+        "documentation": "https://developer.arm.com/mobile-studio/"
+    },
+    "shaders": [
+        {
+            "filename": "./samples/opengles/shader.frag",
+            "hardware": {
+                "architecture": "Valhall",
+                "core": "Mali-G78",
+                "revision": "r1p1",
+                "pipelines": [
+                    {
+                        "description": "Arithmetic Convert pipeline.",
+                        "display_name": "Arith CVT",
+                        "name": "arith_cvt"
+                    },
+                    {
+                        "description": "Arithmetic Fused Multiply-Add pipeline.",
+                        "display_name": "Arith FMA",
+                        "name": "arith_fma"
+                    },
+                    {
+                        "description": "Load/Store pipeline.",
+                        "display_name": "Load/Store",
+                        "name": "load_store"
+                    },
+                    {
+                        "description": "Arithmetic Special Function Unit pipeline.",
+                        "display_name": "Arith SFU",
+                        "name": "arith_sfu"
+                    },
+                    {
+                        "description": "Texture pipeline.",
+                        "display_name": "Texture",
+                        "name": "texture"
+                    },
+                    {
+                        "description": "Varying pipeline.",
+                        "display_name": "Varying",
+                        "name": "varying"
+                    }
+                ]
+            },
+            "driver": "r25p0-00rel0",
+            "shader": {
+                "api": "OpenGL ES",
+                "type": "Fragment"
+            },
+            "warnings": [],
+            "properties": [
+                {
+                    "description": "If true the shader contains computation which produces the same value for every invocation in a draw call or compute dispatch.",
+                    "display_name": "Has uniform computation",
+                    "name": "has_uniform_computation",
+                    "value": true
+                },
+                {
+                    "description": "If true the shader has in-memory side-effects that are visible to the application. Side-effecting shaders often disable optimizations, such as hidden surface removal.",
+                    "display_name": "Has side-effects",
+                    "name": "has_side_effects",
+                    "value": false
+                },
+                {
+                    "description": "If true the shader can modify fragment coverage mask. Shaders with modifiable coverage cannot do early-ZS update and cannot be hidden surface occluders.",
+                    "display_name": "Modifies coverage",
+                    "name": "modifies_coverage",
+                    "value": false
+                },
+                {
+                    "description": "If true the shader uses a late ZS test. Shaders using a late ZS test that are killed are a potential source of inefficiency.",
+                    "display_name": "Uses late ZS test",
+                    "name": "uses_late_zs_test",
+                    "value": false
+                },
+                {
+                    "description": "If true the shader uses a late ZS update. Shaders using a late ZS update can cause later fragment at the same coordinate to stall due a depth dependency.",
+                    "display_name": "Uses late ZS update",
+                    "name": "uses_late_zs_update",
+                    "value": false
+                },
+                {
+                    "description": "If true the shader programmatically reads from the color buffer. Shaders that read from the color buffer are treated as transparent, and cannot be hidden surface occluders.",
+                    "display_name": "Reads color buffer",
+                    "name": "reads_color_buffer",
+                    "value": false
+                }
+            ],
+            "variants": [
+                {
+                    "name": "Main",
+                    "performance": {
+                        "longest_path_cycles": {
+                            "bound_pipelines": [
+                                "arith_fma"
+                            ],
+                            "cycle_count": [
+                                1.40625,
+                                0.078125,
+                                0.8125,
+                                0.0,
+                                0.75,
+                                0.25
+                            ]
+                        },
+                        "pipelines": [
+                            "arith_fma",
+                            "arith_cvt",
+                            "arith_sfu",
+                            "load_store",
+                            "varying",
+                            "texture"
+                        ],
+                        "shortest_path_cycles": {
+                            "bound_pipelines": [
+                                "arith_fma"
+                            ],
+                            "cycle_count": [
+                                1.40625,
+                                0.046875,
+                                0.8125,
+                                0.0,
+                                0.75,
+                                0.25
+                            ]
+                        },
+                        "total_cycles": {
+                            "bound_pipelines": [
+                                "arith_fma"
+                            ],
+                            "cycle_count": [
+                                1.40625,
+                                0.078125,
+                                0.8125,
+                                0.0,
+                                0.75,
+                                0.25
+                            ]
+                        }
+                    },
+                    "properties": [
+                        {
+                            "description": "Number of read-write work registers used.",
+                            "display_name": "Work Registers Used",
+                            "name": "work_registers_used",
+                            "value": 32
+                        },
+                        {
+                            "description": "Number of read-only uniform registers used.",
+                            "display_name": "Uniform Registers Used",
+                            "name": "uniform_registers_used",
+                            "value": 18
+                        },
+                        {
+                            "description": "If true one or more variables had to be stored on the stack.",
+                            "display_name": "Has Stack Spilling",
+                            "name": "has_stack_spilling",
+                            "value": false
+                        },
+                        {
+                            "description": "Number of bytes stored on the stack instead of a register.",
+                            "display_name": "Stack Spill Size (bytes)",
+                            "name": "stack_spill_bytes",
+                            "value": 0
+                        },
+                        {
+                            "description": "The percentage of narrow arithmetic ops.",
+                            "display_name": "16-bit arithmetic",
+                            "name": "fp16_arithmetic",
+                            "value": 0
+                        }
+                    ]
+                }
+            ]
+        }
+    ]
+}

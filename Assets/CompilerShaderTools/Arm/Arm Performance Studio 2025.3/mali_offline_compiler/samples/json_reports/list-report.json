@@ -1,0 +1,78 @@
+{
+    "schema": {
+        "name": "list",
+        "version": 0
+    },
+    "producer": {
+        "name": "Mali Offline Compiler",
+        "version": [7, 2, 0],
+        "build": "624fbd",
+        "documentation": "https://developer.arm.com/mobile-studio/"
+    },
+    "cores": [
+        {
+            "core": "Mali-G78",
+            "apis": ["OpenGL ES", "Vulkan", "OpenCL"]
+        },
+        {
+            "core": "Mali-G77",
+            "apis": ["OpenGL ES", "Vulkan", "OpenCL"]
+        },
+        {
+            "core": "Mali-G68",
+            "apis": ["OpenGL ES", "Vulkan", "OpenCL"]
+        },
+        {
+            "core": "Mali-G57",
+            "apis": ["OpenGL ES", "Vulkan", "OpenCL"]
+        },
+        {
+            "core": "Mali-G76",
+            "apis": ["OpenGL ES", "Vulkan", "OpenCL"]
+        },
+        {
+            "core": "Mali-G72",
+            "apis": ["OpenGL ES", "Vulkan", "OpenCL"]
+        },
+        {
+            "core": "Mali-G71",
+            "apis": ["OpenGL ES", "Vulkan", "OpenCL"]
+        },
+        {
+            "core": "Mali-G52",
+            "apis": ["OpenGL ES", "Vulkan", "OpenCL"]
+        },
+        {
+            "core": "Mali-G51",
+            "apis": ["OpenGL ES", "Vulkan", "OpenCL"]
+        },
+        {
+            "core": "Mali-G31",
+            "apis": ["OpenGL ES", "Vulkan", "OpenCL"]
+        },
+        {
+            "core": "Mali-T880",
+            "apis": ["OpenGL ES", "Vulkan", "OpenCL"]
+        },
+        {
+            "core": "Mali-T860",
+            "apis": ["OpenGL ES", "Vulkan", "OpenCL"]
+        },
+        {
+            "core": "Mali-T830",
+            "apis": ["OpenGL ES", "Vulkan", "OpenCL"]
+        },
+        {
+            "core": "Mali-T820",
+            "apis": ["OpenGL ES", "Vulkan", "OpenCL"]
+        },
+        {
+            "core": "Mali-T760",
+            "apis": ["OpenGL ES", "Vulkan", "OpenCL"]
+        },
+        {
+            "core": "Mali-T720",
+            "apis": ["OpenGL ES", "OpenCL"]
+        }
+    ]
+}

@@ -1,0 +1,251 @@
+{
+    "$schema": "http://json-schema.org/schema#",
+
+    "definitions": {
+        "producer": {
+            "type": "object",
+            "properties": {
+                "name": {
+                    "type": "string"
+                },
+                "version": {
+                    "type": "array",
+                    "minItems": 3,
+                    "maxItems": 3,
+                    "items": {
+                        "type": "number"
+                    }
+                },
+                "build": {
+                    "type": "string"
+                },
+                "documentation": {
+                    "type": "string"
+                }
+            },
+            "required": ["name", "version", "build", "documentation"],
+            "additionalProperties": false
+        },
+        "hardware": {
+            "type": "object",
+            "properties": {
+                "architecture": {
+                    "type": "string"
+                },
+                "core": {
+                    "type": "string"
+                },
+                "revision": {
+                    "type": "string"
+                },
+                "pipelines": {
+                    "type": "array",
+                    "items": {
+                        "type": "object",
+                        "properties": {
+                            "name": {
+                                "type": "string"
+                            },
+                            "display_name": {
+                                "type": "string"
+                            },
+                            "description": {
+                                "type": "string"
+                            }
+                        },
+                        "required": ["name", "display_name", "description"],
+                        "additionalProperties": false
+                    }
+                }
+            },
+            "required": ["architecture", "core", "revision"],
+            "additionalProperties": false
+        },
+        "shader": {
+            "type": "object",
+            "properties": {
+                "api": {
+                    "type": "string"
+                },
+                "type": {
+                    "type": "string"
+                }
+            },
+            "required": ["api", "type"],
+            "additionalProperties": false
+        },
+        "shader_property": {
+            "type": "object",
+            "properties": {
+                "name": {
+                    "type": "string"
+                },
+                "display_name": {
+                    "type": "string"
+                },
+                "description": {
+                    "type": "string"
+                },
+                "value": {
+                }
+            },
+            "required": ["name", "display_name", "description", "value"],
+            "additionalProperties": false
+        },
+        "vertex_attribute": {
+            "type": "object",
+            "properties": {
+                "location": {
+                    "type": ["number", "null"]
+                },
+                "symbol": {
+                    "type": "string"
+                }
+            },
+            "required": ["location", "symbol"],
+            "additionalProperties": false
+        },
+        "shader_cost": {
+            "type": "object",
+            "properties": {
+                "cycle_count": {
+                    "type": "array",
+                    "items": {
+                        "type": ["number", "null"]
+                    }
+                },
+                "bound_pipelines": {
+                    "type": "array",
+                    "items": {
+                        "type": ["string", "null"]
+                    }
+                }
+            },
+            "required": ["cycle_count", "bound_pipelines"],
+            "additionalProperties": false
+        },
+        "shader_variant": {
+            "type": "object",
+            "properties": {
+                "name": {
+                    "type": "string"
+                },
+                "performance": {
+                    "type": "object",
+                    "properties": {
+                        "total_cycles": {
+                            "$ref": "#/definitions/shader_cost"
+                        },
+                        "shortest_path_cycles": {
+                            "$ref": "#/definitions/shader_cost"
+                        },
+                        "longest_path_cycles": {
+                            "$ref": "#/definitions/shader_cost"
+                        },
+                        "pipelines": {
+                            "type": "array",
+                            "items": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "required": ["total_cycles", "shortest_path_cycles", "longest_path_cycles"],
+                    "additionalProperties": false
+                },
+                "properties": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/shader_property"
+                    }
+                }
+            },
+            "required": ["name", "performance", "properties"],
+            "additionalProperties": false
+        }
+    },
+
+    "type": "object",
+    "properties": {
+        "schema": {
+            "type": "object",
+            "properties": {
+                "name": {
+                    "type": "string",
+                    "const": "performance"
+                },
+                "version": {
+                    "type": "number",
+                    "const": 2
+                }
+            },
+            "required": ["name", "version"],
+            "additionalProperties": false
+        },
+        "producer": {
+            "$ref": "#/definitions/producer"
+        },
+        "shaders": {
+            "type": "array",
+            "items": {
+                "type": "object",
+                "properties": {
+                    "filename": {
+                        "type": "string"
+                    },
+                    "hardware": {
+                        "$ref": "#/definitions/hardware"
+                    },
+                    "driver": {
+                        "type": "string"
+                    },
+                    "shader": {
+                        "$ref": "#/definitions/shader"
+                    },
+                    "notes": {
+                        "type": "array",
+                        "items": {
+                            "type": "string"
+                        }
+                    },
+                    "warnings": {
+                        "type": "array",
+                        "items": {
+                            "type": "string"
+                        }
+                    },
+                    "properties": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/definitions/shader_property"
+                        }
+                    },
+                    "variants": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/definitions/shader_variant"
+                        }
+                    },
+                    "attribute_streams": {
+                        "type": "object",
+                        "position": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/vertex_attribute"
+                            }
+                        },
+                        "nonposition": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/vertex_attribute"
+                            }
+                        }
+                    }
+                },
+                "required": ["filename", "hardware", "driver", "shader", "notes", "warnings", "properties", "variants"],
+                "additionalProperties": true
+            }
+        }
+    },
+    "required": ["schema", "producer", "shaders"],
+    "additionalProperties": false
+}

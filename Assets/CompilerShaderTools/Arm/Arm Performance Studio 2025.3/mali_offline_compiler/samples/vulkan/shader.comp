@@ -1,0 +1,31 @@
+#version 310 es
+
+/*
+ * This confidential and proprietary software may be used only as
+ * authorised by a licensing agreement from Arm Limited.
+ *    Copyright 2015-2020 Arm Ltd. All Rights Reserved.
+ * The entire notice above must be reproduced on all authorised
+ * copies and copies may only be made to the extent permitted
+ * by a licensing agreement from Arm Limited.
+ */
+
+layout( local_size_x = 8, local_size_y = 8, local_size_z = 1 ) in;
+
+mediump layout( binding = 0, rgba8 ) writeonly uniform image2D outTex;
+
+layout(push_constant) uniform pushConstants
+{
+    float intensity;
+    mat4 vp;
+} constants;
+
+void main( void )
+{
+    ivec2 storePos = ivec2( gl_GlobalInvocationID.xy );
+    vec4 colour = vec4( constants.intensity * 0.01, 0.0, 0.0, 1.0 );
+
+    imageStore( outTex, storePos, colour );
+
+    return;
+}
+

@@ -1,0 +1,108 @@
+{
+    "$schema": "http://json-schema.org/schema#",
+
+    "definitions": {
+        "producer": {
+            "type": "object",
+            "properties": {
+                "name": {
+                    "type": "string"
+                },
+                "version": {
+                    "type": "array",
+                    "minItems": 3,
+                    "maxItems": 3,
+                    "items": {
+                        "type": "number"
+                    }
+                },
+                "build": {
+                    "type": "string"
+                },
+                "documentation": {
+                    "type": "string"
+                }
+            },
+            "required": ["name", "version", "build", "documentation"],
+            "additionalProperties": false
+        },
+        "hardware": {
+            "type": "object",
+            "properties": {
+                "architecture": {
+                    "type": "string"
+                },
+                "core": {
+                    "type": "string"
+                },
+                "revision": {
+                    "type": "string"
+                }
+            },
+            "required": ["architecture", "core", "revision"],
+            "additionalProperties": false
+        },
+        "api": {
+            "type": "object",
+            "properties": {
+                "max_version": {
+                    "type": ["number", "null"]
+                },
+                "extensions": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                }
+            },
+            "required": ["max_version", "extensions"],
+            "additionalProperties": false
+        }
+    },
+
+    "type": "object",
+    "properties": {
+        "schema": {
+            "type": "object",
+            "properties": {
+                "name": {
+                    "type": "string",
+                    "const": "info"
+                },
+                "version": {
+                    "type": "number",
+                    "const": 0
+                }
+            },
+            "required": ["name", "version"],
+            "additionalProperties": false
+        },
+        "producer": {
+            "$ref": "#/definitions/producer"
+        },
+        "hardware": {
+            "$ref": "#/definitions/hardware"
+        },
+        "driver": {
+            "type": "string"
+        },
+        "apis": {
+            "type": "object",
+            "properties": {
+                "opengles": {
+                    "$ref": "#/definitions/api"
+                },
+                "vulkan": {
+                    "$ref": "#/definitions/api"
+                },
+                "opencl": {
+                    "$ref": "#/definitions/api"
+                }
+            },
+            "required": ["opengles", "vulkan", "opencl"],
+            "additionalProperties": false
+        }
+    },
+    "required": ["schema", "producer", "hardware", "driver", "apis"],
+    "additionalProperties": false
+}

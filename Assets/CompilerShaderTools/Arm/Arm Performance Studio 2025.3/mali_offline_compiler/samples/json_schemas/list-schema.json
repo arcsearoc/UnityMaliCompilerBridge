@@ -1,0 +1,77 @@
+{
+    "$schema": "http://json-schema.org/schema#",
+
+    "definitions": {
+        "producer": {
+            "type": "object",
+            "properties": {
+                "name": {
+                    "type": "string"
+                },
+                "version": {
+                    "type": "array",
+                    "minItems": 3,
+                    "maxItems": 3,
+                    "items": {
+                        "type": "number"
+                    }
+                },
+                "build": {
+                    "type": "string"
+                },
+                "documentation": {
+                    "type": "string"
+                }
+            },
+            "required": ["name", "version", "build", "documentation"],
+            "additionalProperties": false
+        },
+        "core": {
+            "type": "object",
+            "properties": {
+                "core": {
+                    "type": "string"
+                },
+                "apis": {
+                    "type": "array",
+                    "items": {
+                        "type": "string",
+                        "enum": ["OpenGL ES", "Vulkan", "OpenCL"]
+                    }
+                }
+            },
+            "required": ["core", "apis"],
+            "additionalProperties": false
+        }
+    },
+
+    "type": "object",
+    "properties": {
+        "schema": {
+            "type": "object",
+            "properties": {
+                "name": {
+                    "type": "string",
+                    "const": "list"
+                },
+                "version": {
+                    "type": "number",
+                    "const": 0
+                }
+            },
+            "required": ["name", "version"],
+            "additionalProperties": false
+        },
+        "producer": {
+            "$ref": "#/definitions/producer"
+        },
+        "cores": {
+            "type": "array",
+            "items": {
+                "$ref": "#/definitions/core"
+            }
+        }
+    },
+    "required": ["schema", "producer", "cores"],
+    "additionalProperties": false
+}

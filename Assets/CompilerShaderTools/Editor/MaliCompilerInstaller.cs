@@ -193,8 +193,7 @@ public static class MaliCompilerMenuItems
         EditorUtility.DisplayDialog("关于Mali Compiler Integration", 
             "Mali Compiler Integration for Unity\n" +
             "版本: 1.0\n" +
-            "作者: MiniMax Agent\n" +
-            "更新时间: 2025-08-05\n\n" +
+            "更新时间: 2025-08-11\n\n" +
             "专业级Unity Shader性能分析工具，集成ARM Mali Offline Compiler，" +
             "提供详细的性能指标分析和智能优化建议。\n\n" +
             "支持Mali-G71到Mali-G715等多种GPU型号，" +

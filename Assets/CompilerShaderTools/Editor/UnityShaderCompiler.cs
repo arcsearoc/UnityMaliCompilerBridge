@@ -100,6 +100,18 @@ public static class UnityShaderCompiler
     }
 
     // 反射调用OpenCompiledShader方法
+    /// <summary>
+    /// OpenCompiledShader 会调用Unity引擎内的方法，
+    /// 在生成shader代码之后默认会额外打开它
+    /// 是否有其他方式呢？
+    /// </summary>
+    /// <param name="shader"></param>
+    /// <param name="mode"></param>
+    /// <param name="externPlatformsMask"></param>
+    /// <param name="includeAllVariants"></param>
+    /// <param name="preprocessOnly"></param>
+    /// <param name="stripLineDirectives"></param>
+    /// <returns></returns>
     public static bool InvokeOpenCompiledShader(
         Shader shader,
         int mode,

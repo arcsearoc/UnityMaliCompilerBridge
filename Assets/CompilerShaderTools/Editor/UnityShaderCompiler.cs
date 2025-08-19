@@ -5,6 +5,7 @@ using System.IO;
 using System.Text;
 using System.Reflection;
 using System;
+using System.Text.RegularExpressions;
 using UnityEditor.Rendering;
 
 /// <summary>
@@ -48,6 +49,11 @@ public static class UnityShaderCompiler
             {
                 result.vertexShader = ExtractVertexShaderFromCompiled(compiledShader);
                 result.fragmentShader = ExtractFragmentShaderFromCompiled(compiledShader);
+                
+                // 处理GLSL版本问题，将#version 300 es替换为#version 310 es
+                result.vertexShader = ProcessGLSLVersion(result.vertexShader);
+                result.fragmentShader = ProcessGLSLVersion(result.fragmentShader);
+                
                 result.isSuccess = true;
             }
             else
@@ -64,6 +70,17 @@ public static class UnityShaderCompiler
         return result;
     }
     
+    /// <summary>
+    /// 处理GLSL版本，将#version 300 es替换为#version 310 es以解决某些编译问题
+    /// </summary>
+    private static string ProcessGLSLVersion(string shaderCode)
+    {
+        if (string.IsNullOrEmpty(shaderCode))
+            return shaderCode;
+            
+        // 使用正则表达式替换#version 300 es为#version 310 es
+        return Regex.Replace(shaderCode, @"#version\s+300\s+es", "#version 310 es");
+    }
     
     /// <summary>
     /// 使用反射调用Unity内部API进行Shader编译
@@ -298,5 +315,32 @@ public static class UnityShaderCompiler
                shaderCode.Contains("uniform") ||
                shaderCode.Contains("varying") ||
                shaderCode.Contains("attribute");
+    }
+    
+    /// <summary>
+    /// 检测是否为URP着色器
+    /// </summary>
+    public static bool IsURPShader(Shader shader)
+    {
+        if (shader == null)
+            return false;
+            
+        string shaderPath = AssetDatabase.GetAssetPath(shader);
+        if (string.IsNullOrEmpty(shaderPath))
+            return false;
+            
+        // 检查shader文件内容是否包含URP特征
+        try
+        {
+            string shaderContent = File.ReadAllText(shaderPath);
+            return shaderContent.Contains("Universal Render Pipeline") || 
+                   shaderContent.Contains("UniversalPipeline") || 
+                   shaderContent.Contains("URP") ||
+                   shaderContent.Contains("Packages/com.unity.render-pipelines.universal");
+        }
+        catch
+        {
+            return false;
+        }
     }
 }

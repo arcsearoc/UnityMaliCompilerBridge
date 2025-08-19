@@ -76,6 +76,9 @@ public class MaliCompilerWindow : EditorWindow
     private List<OptimizationSuggestion> optimizationSuggestions;
     private string analysisReport = "";
     
+    // 滚动位置
+    private Vector2 analysisScrollPosition;
+    
     // 折叠面板状态
     private bool showConfiguration = true;
     private bool showShaderSelection = true;
@@ -97,6 +100,10 @@ public class MaliCompilerWindow : EditorWindow
     
     private void InitializeStyles()
     {
+        // 确保EditorStyles已经初始化
+        if (EditorStyles.boldLabel == null)
+            return;
+            
         headerStyle = new GUIStyle(EditorStyles.boldLabel)
         {
             fontSize = 16,
@@ -389,7 +396,12 @@ public class MaliCompilerWindow : EditorWindow
             if (showAnalysis && !string.IsNullOrEmpty(analysisReport))
             {
                 EditorGUILayout.BeginVertical(sectionStyle);
-                EditorGUILayout.TextArea(analysisReport, EditorStyles.wordWrappedLabel, GUILayout.Height(200));
+                
+                // 使用类成员变量保存滚动位置
+                analysisScrollPosition = EditorGUILayout.BeginScrollView(analysisScrollPosition, GUILayout.Height(200));
+                GUILayout.TextArea(analysisReport, EditorStyles.wordWrappedLabel);
+                EditorGUILayout.EndScrollView();
+                
                 EditorGUILayout.EndVertical();
             }
         }
@@ -498,7 +510,14 @@ public class MaliCompilerWindow : EditorWindow
         statusMessage = "正在解析Shader文件...";
         
         try
-        {            
+        {
+            // 检查是否为URP着色器
+            bool isURPShader = UnityShaderCompiler.IsURPShader(selectedShader);
+            if (isURPShader)
+            {
+                statusMessage = "检测到URP着色器，使用特殊处理...";
+            }
+            
             var result = UnityShaderCompiler.CompileShaderForPlatform(selectedShader, UnityEditor.Rendering.ShaderCompilerPlatform.GLES3x);
             
             if (result.vertexShader == null || result.fragmentShader == null)
@@ -598,7 +617,7 @@ public class MaliCompilerWindow : EditorWindow
             
             if (config.enableVerboseOutput)
             {
-                startInfo.Arguments += " -v";
+                startInfo.Arguments += " -d";
             }
             
             using (var process = Process.Start(startInfo))

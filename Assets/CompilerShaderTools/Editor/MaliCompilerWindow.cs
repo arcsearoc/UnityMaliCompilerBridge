@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System;
 using System.Text;
+using System.Linq;
 using static UnityShaderCompiler;
 
 /// <summary>
@@ -65,8 +66,11 @@ public class MaliCompilerWindow : EditorWindow
     private static string unityCompiledFragmentCode = "";
 
     // 变体缓存与选择
+    private List<UnityShaderCompiler.ShaderCompiledVariant> allCompiledVariants = new List<UnityShaderCompiler.ShaderCompiledVariant>();
     private List<UnityShaderCompiler.ShaderCompiledVariant> compiledVariants = new List<UnityShaderCompiler.ShaderCompiledVariant>();
     private int selectedVariantIndex = 0;
+    private string passFilter = "";
+    private string keywordFilter = "";
     
     // 编译状态
     private bool isCompiling = false;
@@ -101,8 +105,11 @@ public class MaliCompilerWindow : EditorWindow
         
         InitializeStyles();
 
+        allCompiledVariants = new List<UnityShaderCompiler.ShaderCompiledVariant>();
         compiledVariants = new List<UnityShaderCompiler.ShaderCompiledVariant>();
         selectedVariantIndex = 0;
+        passFilter = "";
+        keywordFilter = "";
     }
     
     private void InitializeStyles()
@@ -231,31 +238,48 @@ public class MaliCompilerWindow : EditorWindow
                     config.selectedGPUModel = gpuModels[selectedGPUIndex];
                 }
 
-                // 变体选择
+                // 筛选
                 EditorGUILayout.Space(5);
-                EditorGUILayout.LabelField("变体:", EditorStyles.boldLabel);
+                EditorGUILayout.LabelField("变体筛选:", EditorStyles.boldLabel);
+                passFilter = EditorGUILayout.TextField("Pass 名称包含", passFilter);
+                keywordFilter = EditorGUILayout.TextField("关键词包含", keywordFilter);
                 EditorGUILayout.BeginHorizontal();
-                bool hasVariants = compiledVariants != null && compiledVariants.Count > 0;
-                GUI.enabled = hasVariants;
-                int maxIndex = Mathf.Max(0, (hasVariants ? compiledVariants.Count - 1 : 0));
-                int newIndex = EditorGUILayout.IntSlider("变体索引", selectedVariantIndex, 0, maxIndex);
-                if (newIndex != selectedVariantIndex)
+                if (GUILayout.Button("应用筛选", GUILayout.Width(80)))
                 {
-                    selectedVariantIndex = newIndex;
-                    if (hasVariants)
-                    {
-                        selectedVariantIndex = Mathf.Clamp(selectedVariantIndex, 0, compiledVariants.Count - 1);
-                        unityCompiledVertexCode = compiledVariants[selectedVariantIndex].vertexShader;
-                        unityCompiledFragmentCode = compiledVariants[selectedVariantIndex].fragmentShader;
-                    }
+                    ApplyVariantFilter();
                 }
-                GUI.enabled = true;
+                if (GUILayout.Button("清空筛选", GUILayout.Width(80)))
+                {
+                    passFilter = "";
+                    keywordFilter = "";
+                    ApplyVariantFilter();
+                }
                 if (GUILayout.Button("刷新变体", GUILayout.Width(90)))
                 {
                     RefreshVariants();
                 }
                 EditorGUILayout.EndHorizontal();
-                EditorGUILayout.LabelField($"当前变体数: {(hasVariants ? compiledVariants.Count : 0)}", EditorStyles.miniLabel);
+
+                // 变体选择
+                EditorGUILayout.Space(5);
+                EditorGUILayout.LabelField("变体:", EditorStyles.boldLabel);
+                bool hasVariants = compiledVariants != null && compiledVariants.Count > 0;
+                int maxIndex = Mathf.Max(0, (hasVariants ? compiledVariants.Count - 1 : 0));
+                int newIndex = EditorGUILayout.IntSlider("变体索引", selectedVariantIndex, 0, maxIndex);
+                if (newIndex != selectedVariantIndex)
+                {
+                    selectedVariantIndex = newIndex;
+                    UpdateCompiledCodeFromSelected();
+                }
+                EditorGUILayout.LabelField($"当前变体数: {(hasVariants ? compiledVariants.Count : 0)} / 全量: {allCompiledVariants.Count}", EditorStyles.miniLabel);
+
+                // 当前变体元数据展示
+                if (hasVariants && selectedVariantIndex >= 0 && selectedVariantIndex < compiledVariants.Count)
+                {
+                    var v = compiledVariants[selectedVariantIndex];
+                    EditorGUILayout.LabelField("当前 Pass 名称:", string.IsNullOrEmpty(v.passName) ? "(未命名)" : v.passName);
+                    EditorGUILayout.LabelField("当前 Keywords:", string.IsNullOrEmpty(v.keywords) ? "(无)" : v.keywords);
+                }
             }
             else
             {
@@ -538,6 +562,7 @@ public class MaliCompilerWindow : EditorWindow
     {
         if (selectedShader == null)
         {
+            allCompiledVariants = new List<UnityShaderCompiler.ShaderCompiledVariant>();
             compiledVariants = new List<UnityShaderCompiler.ShaderCompiledVariant>();
             selectedVariantIndex = 0;
             unityCompiledVertexCode = "";
@@ -545,9 +570,32 @@ public class MaliCompilerWindow : EditorWindow
             return;
         }
 
-        compiledVariants = UnityShaderCompiler.CompileAllVariantsForPlatform(selectedShader, UnityEditor.Rendering.ShaderCompilerPlatform.GLES3x);
+        allCompiledVariants = UnityShaderCompiler.CompileAllVariantsForPlatform(selectedShader, UnityEditor.Rendering.ShaderCompilerPlatform.GLES3x);
+        ApplyVariantFilter();
+    }
+
+    private void ApplyVariantFilter()
+    {
+        if (allCompiledVariants == null) allCompiledVariants = new List<UnityShaderCompiler.ShaderCompiledVariant>();
+        IEnumerable<UnityShaderCompiler.ShaderCompiledVariant> q = allCompiledVariants;
+
+        if (!string.IsNullOrEmpty(passFilter))
+        {
+            q = q.Where(v => !string.IsNullOrEmpty(v.passName) && v.passName.IndexOf(passFilter, StringComparison.OrdinalIgnoreCase) >= 0);
+        }
+        if (!string.IsNullOrEmpty(keywordFilter))
+        {
+            q = q.Where(v => !string.IsNullOrEmpty(v.keywords) && v.keywords.IndexOf(keywordFilter, StringComparison.OrdinalIgnoreCase) >= 0);
+        }
+
+        compiledVariants = q.ToList();
         selectedVariantIndex = Mathf.Clamp(selectedVariantIndex, 0, Mathf.Max(0, compiledVariants.Count - 1));
-        if (compiledVariants.Count > 0)
+        UpdateCompiledCodeFromSelected();
+    }
+
+    private void UpdateCompiledCodeFromSelected()
+    {
+        if (compiledVariants != null && compiledVariants.Count > 0 && selectedVariantIndex >= 0 && selectedVariantIndex < compiledVariants.Count)
         {
             unityCompiledVertexCode = compiledVariants[selectedVariantIndex].vertexShader;
             unityCompiledFragmentCode = compiledVariants[selectedVariantIndex].fragmentShader;
@@ -579,11 +627,12 @@ public class MaliCompilerWindow : EditorWindow
             // 准备变体
             if (compiledVariants == null || compiledVariants.Count == 0)
             {
-                compiledVariants = UnityShaderCompiler.CompileAllVariantsForPlatform(selectedShader, UnityEditor.Rendering.ShaderCompilerPlatform.GLES3x);
+                allCompiledVariants = UnityShaderCompiler.CompileAllVariantsForPlatform(selectedShader, UnityEditor.Rendering.ShaderCompilerPlatform.GLES3x);
+                ApplyVariantFilter();
             }
             if (compiledVariants == null || compiledVariants.Count == 0)
             {
-                statusMessage = "无法解析任何变体，请检查Shader或平台选择";
+                statusMessage = "无法解析任何变体，请检查Shader或平台选择/筛选条件";
                 return new ShaderCompileResult();
             }
 

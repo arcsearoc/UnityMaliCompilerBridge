@@ -356,7 +356,7 @@ public static class UnityShaderCompiler
     }
 
     /// <summary>
-    /// 获取所有变体的已编译代码（按顺序配对第N个Vertex与第N个Fragment）
+    /// 获取所有变体（顺序扫描，按 Pass 名称与 Keywords 就地绑定，再配对 VS/FS）
     /// </summary>
     public static List<ShaderCompiledVariant> CompileAllVariantsForPlatform(Shader shader, ShaderCompilerPlatform platform)
     {
@@ -366,86 +366,225 @@ public static class UnityShaderCompiler
         string compiled = CompileShaderForSpecificPlatform(shader, platform);
         if (string.IsNullOrEmpty(compiled)) return variants;
 
-        var vertexList = ExtractAllShaderSections(compiled, "#ifdef VERTEX", "#endif");
-        var fragmentList = ExtractAllShaderSections(compiled, "#ifdef FRAGMENT", "#endif");
+        // 顺序扫描状态
+        string currentPassName = "";
+        string currentKeywords = "";
+        string currentLocalKeywords = "";
 
-        int count = Math.Min(vertexList.Count, fragmentList.Count);
-        for (int i = 0; i < count; i++)
+        // 暂存分段：按 (passName, keywords) 分组的 VS/FS 列表
+        var vertexBuckets = new Dictionary<string, List<string>>();
+        var fragmentBuckets = new Dictionary<string, List<string>>();
+
+        string[] lines = compiled.Split(new[] { "\r\n", "\n", "\r" }, StringSplitOptions.None);
+        for (int i = 0; i < lines.Length; i++)
         {
-            variants.Add(new ShaderCompiledVariant
+            string line = lines[i];
+
+            // 1) 进入/识别 Pass 名称（支持多种格式）
+            // Pass { Name "World" ... }
+            var mPassNameInline = Regex.Match(line, @"^\s*Pass\s*\{\s*Name\s*""([^""]+)""", RegexOptions.IgnoreCase);
+            if (mPassNameInline.Success)
             {
-                vertexShader = ProcessGLSLVersion(vertexList[i]),
-                fragmentShader = ProcessGLSLVersion(fragmentList[i]),
-                passName = "",
-                keywords = ""
-            });
+                currentPassName = mPassNameInline.Groups[1].Value.Trim();
+                continue;
+            }
+            // 独立 Name "World"
+            var mName = Regex.Match(line, @"^\s*Name\s*""([^""]+)""", RegexOptions.IgnoreCase);
+            if (mName.Success)
+            {
+                currentPassName = mName.Groups[1].Value.Trim();
+                continue;
+            }
+            // 兼容其它格式：Pass: SomeName
+            var mPassColon = Regex.Match(line, @"^\s*Pass\s*:\s*'?([^'\r\n]+)'?\s*$", RegexOptions.IgnoreCase);
+            if (mPassColon.Success)
+            {
+                currentPassName = mPassColon.Groups[1].Value.Trim();
+                continue;
+            }
+            // 兼容：Subshader x, pass y 'Name'
+            var mSubPass = Regex.Match(line, @"Subshader\s+\d+.*pass\s+\d+(?:\s*'([^']+)')?", RegexOptions.IgnoreCase);
+            if (mSubPass.Success && mSubPass.Groups.Count > 1 && mSubPass.Groups[1].Success)
+            {
+                currentPassName = mSubPass.Groups[1].Value.Trim();
+                continue;
+            }
+
+            // 2) 关键词元数据（每遇到新块会覆盖）
+            var mKw = Regex.Match(line, @"^\s*Keywords\s*:\s*(.+)$", RegexOptions.IgnoreCase);
+            if (mKw.Success)
+            {
+                currentKeywords = mKw.Groups[1].Value.Trim();
+                continue;
+            }
+            var mLocalKw = Regex.Match(line, @"^\s*Local\s+Keywords\s*:\s*(.+)$", RegexOptions.IgnoreCase);
+            if (mLocalKw.Success)
+            {
+                currentLocalKeywords = mLocalKw.Groups[1].Value.Trim();
+                continue;
+            }
+
+            // 3) 采集 VS/FS 段
+            if (line.Trim() == "#ifdef VERTEX")
+            {
+                string code = CollectShaderSection(lines, ref i, "#ifdef VERTEX", "#endif");
+                string key = ComposeBucketKey(currentPassName, currentKeywords, currentLocalKeywords);
+                if (!vertexBuckets.TryGetValue(key, out var list)) { list = new List<string>(); vertexBuckets[key] = list; }
+                list.Add(ProcessGLSLVersion(code));
+                continue;
+            }
+            if (line.Trim() == "#ifdef FRAGMENT")
+            {
+                string code = CollectShaderSection(lines, ref i, "#ifdef FRAGMENT", "#endif");
+                string key = ComposeBucketKey(currentPassName, currentKeywords, currentLocalKeywords);
+                if (!fragmentBuckets.TryGetValue(key, out var list)) { list = new List<string>(); fragmentBuckets[key] = list; }
+                list.Add(ProcessGLSLVersion(code));
+                continue;
+            }
         }
+
+        // 4) 将同组 VS/FS 配对组装为变体
+        foreach (var kv in vertexBuckets)
+        {
+            string key = kv.Key;
+            fragmentBuckets.TryGetValue(key, out var fsList);
+            var vsList = kv.Value;
+            int cnt = Math.Min(vsList.Count, (fsList != null ? fsList.Count : 0));
+            if (cnt <= 0) continue;
+
+            DecomposeBucketKey(key, out string passName, out string combinedKeywords);
+            for (int i = 0; i < cnt; i++)
+            {
+                variants.Add(new ShaderCompiledVariant
+                {
+                    vertexShader = vsList[i],
+                    fragmentShader = fsList[i],
+                    passName = passName,
+                    keywords = combinedKeywords
+                });
+            }
+        }
+
         return variants;
+
+        // 工具：采集以 #ifdef 开始的完整段（不含外层 #ifdef/#endif）
+        static string CollectShaderSection(string[] allLines, ref int index, string start, string end)
+        {
+            var sb = new StringBuilder();
+            int depth = 0;
+            // 当前行是 start，不包含在结果中
+            for (int i = index + 1; i < allLines.Length; i++)
+            {
+                string l = allLines[i].Trim();
+                if (l.StartsWith("#if") || l.StartsWith("#ifdef") || l.StartsWith("#ifndef"))
+                {
+                    depth++;
+                    sb.AppendLine(allLines[i]);
+                    continue;
+                }
+                if (l == end)
+                {
+                    if (depth == 0)
+                    {
+                        index = i; // 将外层 #endif 消费掉
+                        break;
+                    }
+                    else
+                    {
+                        depth--;
+                        sb.AppendLine(allLines[i]);
+                        continue;
+                    }
+                }
+                sb.AppendLine(allLines[i]);
+            }
+            return sb.ToString().TrimEnd('\r', '\n');
+        }
+
+        // 工具：组合/拆解桶键
+        static string ComposeBucketKey(string pass, string kw, string localKw)
+        {
+            string p = string.IsNullOrEmpty(pass) ? "(unnamed)" : pass.Trim();
+            string k1 = string.IsNullOrEmpty(kw) ? "" : kw.Trim();
+            string k2 = string.IsNullOrEmpty(localKw) ? "" : localKw.Trim();
+            string k = string.IsNullOrEmpty(k1) ? k2 : (string.IsNullOrEmpty(k2) ? k1 : (k1 + " " + k2));
+            return p + "||" + k; // 简单分隔
+        }
+
+        static void DecomposeBucketKey(string key, out string pass, out string keywords)
+        {
+            int pos = key.IndexOf("||", StringComparison.Ordinal);
+            if (pos >= 0)
+            {
+                pass = key.Substring(0, pos);
+                keywords = key.Substring(pos + 2);
+            }
+            else
+            {
+                pass = key;
+                keywords = "";
+            }
+        }
     }
 
     /// <summary>
     /// 提取所有匹配的区间，并移除最外层标签
     /// </summary>
+    // 保留：不再使用 ExtractAllShaderSections，但留作后续可能用途
     private static List<string> ExtractAllShaderSections(string code, string startMarker, string endMarker)
     {
         var results = new List<string>();
         if (string.IsNullOrEmpty(code) || string.IsNullOrEmpty(startMarker) || string.IsNullOrEmpty(endMarker))
             return results;
-
-        var lines = code.Split(new[] { '\n', '\r' }, StringSplitOptions.RemoveEmptyEntries);
-        var buffer = new List<string>();
-        var stack = new Stack<string>();
-        bool inSection = false;
-
-        foreach (var line in lines)
+        var lines = code.Split(new[] { "\r\n", "\n", "\r" }, StringSplitOptions.None);
+        int i = 0;
+        while (i < lines.Length)
         {
-            string trimmed = line.Trim();
-            if (!inSection && trimmed == startMarker)
+            if (lines[i].Trim() == startMarker)
             {
-                inSection = true;
-                stack.Push(startMarker);
-                buffer.Clear();
-                // 开始记录，但不包含起始标签
-                continue;
+                string section = "";
+                int idx = i;
+                section = CollectSection(lines, ref idx, startMarker, endMarker);
+                if (!string.IsNullOrWhiteSpace(section)) results.Add(section);
+                i = idx + 1;
             }
-
-            if (inSection)
+            else
             {
-                if (trimmed.StartsWith("#if") || trimmed.StartsWith("#ifdef") || trimmed.StartsWith("#ifndef"))
-                {
-                    stack.Push(trimmed);
-                    buffer.Add(line);
-                }
-                else if (trimmed == endMarker)
-                {
-                    if (stack.Count > 0) stack.Pop();
+                i++;
+            }
+        }
+        return results;
 
-                    if (stack.Count == 0)
+        static string CollectSection(string[] allLines, ref int index, string start, string end)
+        {
+            var sb = new StringBuilder();
+            int depth = 0;
+            for (int i = index + 1; i < allLines.Length; i++)
+            {
+                string l = allLines[i].Trim();
+                if (l.StartsWith("#if") || l.StartsWith("#ifdef") || l.StartsWith("#ifndef"))
+                {
+                    depth++;
+                    sb.AppendLine(allLines[i]);
+                    continue;
+                }
+                if (l == end)
+                {
+                    if (depth == 0)
                     {
-                        // 结束当前段，保存
-                        inSection = false;
-                        // 去掉前后空行
-                        var sb = new StringBuilder();
-                        for (int i = 0; i < buffer.Count; i++)
-                        {
-                            if (!string.IsNullOrWhiteSpace(buffer[i]))
-                                sb.AppendLine(buffer[i]);
-                        }
-                        results.Add(sb.ToString().TrimEnd('\r', '\n'));
-                        buffer.Clear();
+                        index = i;
+                        break;
                     }
                     else
                     {
-                        buffer.Add(line);
+                        depth--;
+                        sb.AppendLine(allLines[i]);
+                        continue;
                     }
                 }
-                else
-                {
-                    buffer.Add(line);
-                }
+                sb.AppendLine(allLines[i]);
             }
+            return sb.ToString().TrimEnd('\r', '\n');
         }
-
-        return results;
     }
 }

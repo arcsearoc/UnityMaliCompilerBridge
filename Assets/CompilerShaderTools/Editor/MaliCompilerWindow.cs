@@ -63,6 +63,10 @@ public class MaliCompilerWindow : EditorWindow
     // Unity编译后代码输入
     private static string unityCompiledVertexCode = "";
     private static string unityCompiledFragmentCode = "";
+
+    // 变体缓存与选择
+    private List<UnityShaderCompiler.ShaderCompiledVariant> compiledVariants = new List<UnityShaderCompiler.ShaderCompiledVariant>();
+    private int selectedVariantIndex = 0;
     
     // 编译状态
     private bool isCompiling = false;
@@ -96,6 +100,9 @@ public class MaliCompilerWindow : EditorWindow
         if (selectedGPUIndex < 0) selectedGPUIndex = 4;
         
         InitializeStyles();
+
+        compiledVariants = new List<UnityShaderCompiler.ShaderCompiledVariant>();
+        selectedVariantIndex = 0;
     }
     
     private void InitializeStyles()
@@ -223,6 +230,32 @@ public class MaliCompilerWindow : EditorWindow
                     selectedGPUIndex = EditorGUILayout.Popup("GPU型号", selectedGPUIndex, gpuModels);
                     config.selectedGPUModel = gpuModels[selectedGPUIndex];
                 }
+
+                // 变体选择
+                EditorGUILayout.Space(5);
+                EditorGUILayout.LabelField("变体:", EditorStyles.boldLabel);
+                EditorGUILayout.BeginHorizontal();
+                bool hasVariants = compiledVariants != null && compiledVariants.Count > 0;
+                GUI.enabled = hasVariants;
+                int maxIndex = Mathf.Max(0, (hasVariants ? compiledVariants.Count - 1 : 0));
+                int newIndex = EditorGUILayout.IntSlider("变体索引", selectedVariantIndex, 0, maxIndex);
+                if (newIndex != selectedVariantIndex)
+                {
+                    selectedVariantIndex = newIndex;
+                    if (hasVariants)
+                    {
+                        selectedVariantIndex = Mathf.Clamp(selectedVariantIndex, 0, compiledVariants.Count - 1);
+                        unityCompiledVertexCode = compiledVariants[selectedVariantIndex].vertexShader;
+                        unityCompiledFragmentCode = compiledVariants[selectedVariantIndex].fragmentShader;
+                    }
+                }
+                GUI.enabled = true;
+                if (GUILayout.Button("刷新变体", GUILayout.Width(90)))
+                {
+                    RefreshVariants();
+                }
+                EditorGUILayout.EndHorizontal();
+                EditorGUILayout.LabelField($"当前变体数: {(hasVariants ? compiledVariants.Count : 0)}", EditorStyles.miniLabel);
             }
             else
             {
@@ -501,6 +534,31 @@ public class MaliCompilerWindow : EditorWindow
         }
     }
     
+    private void RefreshVariants()
+    {
+        if (selectedShader == null)
+        {
+            compiledVariants = new List<UnityShaderCompiler.ShaderCompiledVariant>();
+            selectedVariantIndex = 0;
+            unityCompiledVertexCode = "";
+            unityCompiledFragmentCode = "";
+            return;
+        }
+
+        compiledVariants = UnityShaderCompiler.CompileAllVariantsForPlatform(selectedShader, UnityEditor.Rendering.ShaderCompilerPlatform.GLES3x);
+        selectedVariantIndex = Mathf.Clamp(selectedVariantIndex, 0, Mathf.Max(0, compiledVariants.Count - 1));
+        if (compiledVariants.Count > 0)
+        {
+            unityCompiledVertexCode = compiledVariants[selectedVariantIndex].vertexShader;
+            unityCompiledFragmentCode = compiledVariants[selectedVariantIndex].fragmentShader;
+        }
+        else
+        {
+            unityCompiledVertexCode = "";
+            unityCompiledFragmentCode = "";
+        }
+    }
+    
     private ShaderCompileResult CompileShader()
     {
         if (selectedShader == null) 
@@ -518,7 +576,27 @@ public class MaliCompilerWindow : EditorWindow
                 statusMessage = "检测到URP着色器，使用特殊处理...";
             }
             
-            var result = UnityShaderCompiler.CompileShaderForPlatform(selectedShader, UnityEditor.Rendering.ShaderCompilerPlatform.GLES3x);
+            // 准备变体
+            if (compiledVariants == null || compiledVariants.Count == 0)
+            {
+                compiledVariants = UnityShaderCompiler.CompileAllVariantsForPlatform(selectedShader, UnityEditor.Rendering.ShaderCompilerPlatform.GLES3x);
+            }
+            if (compiledVariants == null || compiledVariants.Count == 0)
+            {
+                statusMessage = "无法解析任何变体，请检查Shader或平台选择";
+                return new ShaderCompileResult();
+            }
+
+            selectedVariantIndex = Mathf.Clamp(selectedVariantIndex, 0, compiledVariants.Count - 1);
+            var chosenVariant = compiledVariants[selectedVariantIndex];
+
+            var result = new ShaderCompileResult
+            {
+                vertexShader = chosenVariant.vertexShader,
+                fragmentShader = chosenVariant.fragmentShader,
+                isSuccess = true,
+                platform = UnityEditor.Rendering.ShaderCompilerPlatform.GLES3x
+            };
             
             if (result.vertexShader == null || result.fragmentShader == null)
             {

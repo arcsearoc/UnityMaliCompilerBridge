@@ -92,7 +92,7 @@ public static class UnityShaderCompiler
             // 模拟Shader Inspector中"Compile and show code"的典型参数
             int mode = 3; // 模式：Custom
             int platformMask = 1 << (int)platform; // 目标平台掩码（Windows）
-            bool includeAllVariants = false; // 不包含所有变体
+            bool includeAllVariants = true; // 包含所有变体
             bool preprocessOnly = false; // 不仅预处理
             bool stripLineDirectives = false; // 不剥离行指令
 
@@ -342,5 +342,110 @@ public static class UnityShaderCompiler
         {
             return false;
         }
+    }
+
+    /// <summary>
+    /// 表示一个已编译的 Shader 变体（按Pass/Keyword组合聚合）
+    /// </summary>
+    public class ShaderCompiledVariant
+    {
+        public string vertexShader;
+        public string fragmentShader;
+        public string passName = "";
+        public string keywords = "";
+    }
+
+    /// <summary>
+    /// 获取所有变体的已编译代码（按顺序配对第N个Vertex与第N个Fragment）
+    /// </summary>
+    public static List<ShaderCompiledVariant> CompileAllVariantsForPlatform(Shader shader, ShaderCompilerPlatform platform)
+    {
+        var variants = new List<ShaderCompiledVariant>();
+        if (shader == null) return variants;
+
+        string compiled = CompileShaderForSpecificPlatform(shader, platform);
+        if (string.IsNullOrEmpty(compiled)) return variants;
+
+        var vertexList = ExtractAllShaderSections(compiled, "#ifdef VERTEX", "#endif");
+        var fragmentList = ExtractAllShaderSections(compiled, "#ifdef FRAGMENT", "#endif");
+
+        int count = Math.Min(vertexList.Count, fragmentList.Count);
+        for (int i = 0; i < count; i++)
+        {
+            variants.Add(new ShaderCompiledVariant
+            {
+                vertexShader = ProcessGLSLVersion(vertexList[i]),
+                fragmentShader = ProcessGLSLVersion(fragmentList[i]),
+                passName = "",
+                keywords = ""
+            });
+        }
+        return variants;
+    }
+
+    /// <summary>
+    /// 提取所有匹配的区间，并移除最外层标签
+    /// </summary>
+    private static List<string> ExtractAllShaderSections(string code, string startMarker, string endMarker)
+    {
+        var results = new List<string>();
+        if (string.IsNullOrEmpty(code) || string.IsNullOrEmpty(startMarker) || string.IsNullOrEmpty(endMarker))
+            return results;
+
+        var lines = code.Split(new[] { '\n', '\r' }, StringSplitOptions.RemoveEmptyEntries);
+        var buffer = new List<string>();
+        var stack = new Stack<string>();
+        bool inSection = false;
+
+        foreach (var line in lines)
+        {
+            string trimmed = line.Trim();
+            if (!inSection && trimmed == startMarker)
+            {
+                inSection = true;
+                stack.Push(startMarker);
+                buffer.Clear();
+                // 开始记录，但不包含起始标签
+                continue;
+            }
+
+            if (inSection)
+            {
+                if (trimmed.StartsWith("#if") || trimmed.StartsWith("#ifdef") || trimmed.StartsWith("#ifndef"))
+                {
+                    stack.Push(trimmed);
+                    buffer.Add(line);
+                }
+                else if (trimmed == endMarker)
+                {
+                    if (stack.Count > 0) stack.Pop();
+
+                    if (stack.Count == 0)
+                    {
+                        // 结束当前段，保存
+                        inSection = false;
+                        // 去掉前后空行
+                        var sb = new StringBuilder();
+                        for (int i = 0; i < buffer.Count; i++)
+                        {
+                            if (!string.IsNullOrWhiteSpace(buffer[i]))
+                                sb.AppendLine(buffer[i]);
+                        }
+                        results.Add(sb.ToString().TrimEnd('\r', '\n'));
+                        buffer.Clear();
+                    }
+                    else
+                    {
+                        buffer.Add(line);
+                    }
+                }
+                else
+                {
+                    buffer.Add(line);
+                }
+            }
+        }
+
+        return results;
     }
 }

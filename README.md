@@ -1,270 +1,272 @@
-# Unity Mali Compiler 集成工具使用指南
+# Unity Mali Compiler Integration Tool User Guide
 
-**版本：1.2.0**  
-**更新时间：2025-08-28**
+**[中文](README_CN.md) | English**
 
-## 📋 概述
+**Version: 1.2.0**  
+**Updated: 2025-08-28**
 
-Unity Mali Compiler集成工具是一个专业级的Unity编辑器扩展，允许开发者直接在Unity中调用ARM Mali Offline Compiler来分析Shader性能，获得详细的性能指标和优化建议。
+## 📋 Overview
 
-### 🎯 主要功能
+Unity Mali Compiler Integration Tool is a professional Unity Editor extension that allows developers to directly invoke ARM Mali Offline Compiler within Unity to analyze Shader performance, providing detailed performance metrics and optimization recommendations.
 
-- **一键Shader分析** - 直接在Unity中编译和分析Shader
-- **智能代码解析** - 自动将Unity Shader转换为Mali Compiler可处理的GLSL格式
-- **详细性能报告** - 提供工作寄存器、指令周期、瓶颈分析等关键指标
-- **智能优化建议** - 基于编译结果自动生成优化建议
-- **多GPU支持** - 支持Mali-G71到Mali-G715等多种GPU型号
-- **批量处理** - 支持保存结果、自动报告生成等
+### 🎯 Key Features
 
-## 🚀 快速开始
+- **One-Click Shader Analysis** - Compile and analyze Shaders directly in Unity
+- **Smart Code Parsing** - Automatically convert Unity Shaders to GLSL format for Mali Compiler
+- **Detailed Performance Reports** - Provide key metrics including work registers, instruction cycles, bottleneck analysis
+- **Intelligent Optimization Suggestions** - Automatically generate optimization recommendations based on compilation results
+- **Multi-GPU Support** - Support various GPU models from Mali-G71 to Mali-G715
+- **Batch Processing** - Support result saving, automatic report generation, etc.
 
-### 1. 环境准备
+## 🚀 Quick Start
 
-#### 下载Mali Offline Compiler（工程也内置了一份）
+### 1. Environment Setup
 
-1. 访问ARM官网：https://developer.arm.com/tools-and-software/graphics-and-gaming/arm-mobile-studio/components/mali-offline-compiler
-2. 根据你的操作系统下载对应版本
-3. 安装完成后记录`malioc.exe`的路径
+#### Download Mali Offline Compiler (Also included in the project)
 
-#### 安装Unity工具
+1. Visit ARM official website: https://developer.arm.com/tools-and-software/graphics-and-gaming/arm-mobile-studio/components/mali-offline-compiler
+2. Download the version corresponding to your operating system
+3. After installation, record the path to `malioc.exe`
 
-1. 将工具包中的所有`.cs`文件复制到Unity项目的`Editor`文件夹中
-2. 等待Unity编译完成
-3. 在菜单栏找到`Tools > Mali Compiler Integration`
+#### Install Unity Tool
 
-### 2. 工具配置
+1. Copy all `.cs` files from the tool package to the `Editor` folder in your Unity project
+2. Wait for Unity to complete compilation
+3. Find `Tools > Mali Compiler Integration` in the menu bar
 
-#### 基础配置
+### 2. Tool Configuration
 
-1. 打开`Tools > Mali Compiler Integration > Main Window`
-2. 在"配置设置"中点击"浏览"按钮
-3. 选择Mali Offline Compiler的`malioc.exe`文件
-4. 配置验证成功后即可使用
+#### Basic Configuration
 
-#### 高级配置（可选）
+1. Open `Tools > Mali Compiler Integration > Main Window`
+2. Click the "Browse" button in "Configuration Settings"
+3. Select the `malioc.exe` file of Mali Offline Compiler
+4. Ready to use after successful configuration verification
 
-- **详细输出**：启用后获得更详细的编译信息
-- **保存临时文件**：用于调试，保存中间转换的GLSL文件
-- **自动保存结果**：自动保存分析报告到本地
-- **显示优化建议**：开启智能优化建议功能
+#### Advanced Configuration (Optional)
 
-### 3. 使用流程
+- **Verbose Output**: Enable for more detailed compilation information
+- **Save Temporary Files**: For debugging, save intermediate converted GLSL files
+- **Auto Save Results**: Automatically save analysis reports locally
+- **Show Optimization Suggestions**: Enable intelligent optimization suggestion feature
 
-#### 方法一：主窗口分析
+### 3. Usage Workflow
 
-1. 打开Mali Compiler主窗口
-2. 选择要分析的Shader文件
-3. （可选）指定特定的GPU型号
-4. 点击"🚀 开始分析"
-5. 查看性能分析报告和优化建议
+#### Method 1: Main Window Analysis
 
-#### 方法二：快速分析
+1. Open Mali Compiler main window
+2. Select the Shader file to analyze
+3. (Optional) Specify a particular GPU model
+4. Click "🚀 Start Analysis"
+5. View performance analysis report and optimization suggestions
 
-1. 在Project窗口中选择Shader文件
-2. 右键选择`Tools > Mali Compiler Integration > Quick Compile`
-3. 或使用菜单栏`Tools > Mali Compiler Integration > Quick Compile`
+#### Method 2: Quick Analysis
 
-#### 方法三：拖拽分析
+1. Select Shader file in Project window
+2. Right-click and select `Tools > Mali Compiler Integration > Quick Compile`
+3. Or use menu bar `Tools > Mali Compiler Integration > Quick Compile`
 
-1. 打开Mali Compiler窗口
-2. 直接将Shader文件拖拽到窗口中
-3. 自动开始分析流程
+#### Method 3: Drag & Drop Analysis
 
-## 📊 结果解读
+1. Open Mali Compiler window
+2. Directly drag Shader file into the window
+3. Automatically start analysis process
 
-### 性能指标说明
+## 📊 Result Interpretation
 
-#### 工作寄存器（Work Registers）
+### Performance Metrics Explanation
 
-- **含义**：Shader执行时使用的寄存器数量
-- **优化目标**：越低越好（建议≤32）
-- **影响**：数量过高会限制并行执行的线程数
+#### Work Registers
 
-#### Uniform寄存器（Uniform Registers）
+- **Meaning**: Number of registers used during Shader execution
+- **Optimization Goal**: Lower is better (recommended ≤32)
+- **Impact**: Excessive numbers limit the number of threads that can execute in parallel
 
-- **含义**：存储常量数据的只读寄存器
-- **特点**：在所有线程间共享，影响相对较小
+#### Uniform Registers
 
-#### 16位运算占比（16-bit Arithmetic）
+- **Meaning**: Read-only registers storing constant data
+- **Characteristics**: Shared among all threads, relatively minor impact
 
-- **含义**：使用16位精度运算的百分比
-- **优化目标**：越高越好（建议≥50%）
-- **影响**：16位运算比32位运算快一倍
+#### 16-bit Arithmetic Ratio
 
-#### 指令周期（Instruction Cycles）
+- **Meaning**: Percentage of 16-bit precision operations used
+- **Optimization Goal**: Higher is better (recommended ≥50%)
+- **Impact**: 16-bit operations are twice as fast as 32-bit operations
 
-- **总周期数**：所有指令的累积周期
-- **最短路径**：最优化执行路径的周期数
-- **最长路径**：最复杂执行路径的周期数
+#### Instruction Cycles
 
-#### 瓶颈单元（Bound Unit）
+- **Total Cycles**: Cumulative cycles of all instructions
+- **Shortest Path**: Cycles for optimized execution path
+- **Longest Path**: Cycles for most complex execution path
 
-- **A (Arithmetic)**：算术运算瓶颈
-- **T (Texture)**：纹理采样瓶颈
-- **LS (Load/Store)**：内存读写瓶颈
-- **V (Varying)**：插值计算瓶颈
+#### Bound Unit
 
-### Shader属性分析
+- **A (Arithmetic)**: Arithmetic operation bottleneck
+- **T (Texture)**: Texture sampling bottleneck
+- **LS (Load/Store)**: Memory read/write bottleneck
+- **V (Varying)**: Interpolation calculation bottleneck
 
-#### 性能影响属性
+### Shader Property Analysis
 
-- **Has uniform computation**：包含统一计算，建议移至CPU
-- **Uses late ZS test**：使用延迟深度测试，影响Early-Z优化
-- **Has side-effects**：具有副作用，影响并行执行
-- **Stack spilling**：寄存器溢出，严重性能问题
+#### Performance Impact Properties
 
-## 🔧 优化建议指南
+- **Has uniform computation**: Contains uniform computation, recommend moving to CPU
+- **Uses late ZS test**: Uses late depth testing, affects Early-Z optimization
+- **Has side-effects**: Has side effects, affects parallel execution
+- **Stack spilling**: Register overflow, serious performance issue
 
-### 优先级颜色说明
+## 🔧 Optimization Guide
 
-- 🔴 **严重**：必须立即处理的性能问题
-- 🟠 **高**：显著影响性能，建议优先优化
-- 🟡 **中**：有一定影响，可适当优化
-- 🟢 **低**：轻微影响，时间充裕时优化
+### Priority Color Coding
 
-### 常见优化策略
+- 🔴 **Critical**: Performance issues that must be addressed immediately
+- 🟠 **High**: Significantly affects performance, recommend priority optimization
+- 🟡 **Medium**: Some impact, moderate optimization recommended
+- 🟢 **Low**: Minor impact, optimize when time permits
 
-#### 1. 寄存器优化
+### Common Optimization Strategies
+
+#### 1. Register Optimization
 
 ```hlsl
-// ❌ 避免：过多局部变量
+// ❌ Avoid: Too many local variables
 float temp1 = calcA();
 float temp2 = calcB();
 float temp3 = calcC();
 float result = temp1 * temp2 + temp3;
 
-// ✅ 推荐：合并计算
+// ✅ Recommended: Merge calculations
 float result = calcA() * calcB() + calcC();
 ```
 
-#### 2. 精度优化
+#### 2. Precision Optimization
 
 ```hlsl
-// ❌ 避免：不必要的高精度
+// ❌ Avoid: Unnecessary high precision
 float4 color = tex2D(_MainTex, uv);
 float brightness = dot(color.rgb, float3(0.299, 0.587, 0.114));
 
-// ✅ 推荐：使用适当精度
+// ✅ Recommended: Use appropriate precision
 half4 color = tex2D(_MainTex, uv);
 half brightness = dot(color.rgb, half3(0.299, 0.587, 0.114));
 ```
 
-#### 3. 分支优化
+#### 3. Branch Optimization
 
 ```hlsl
-// ❌ 避免：复杂分支
+// ❌ Avoid: Complex branches
 if (condition1) {
     if (condition2) {
-        // 复杂计算
+        // Complex calculation
     }
 }
 
-// ✅ 推荐：使用lerp或step
+// ✅ Recommended: Use lerp or step
 float factor = step(0.5, condition1) * step(0.5, condition2);
 result = lerp(defaultValue, complexValue, factor);
 ```
 
-#### 4. 纹理优化
+#### 4. Texture Optimization
 
 ```hlsl
-// ❌ 避免：过多纹理采样
+// ❌ Avoid: Too many texture samples
 float4 tex1 = tex2D(_Tex1, uv);
 float4 tex2 = tex2D(_Tex2, uv);
 float4 tex3 = tex2D(_Tex3, uv);
 float4 tex4 = tex2D(_Tex4, uv);
 
-// ✅ 推荐：纹理合并或减少采样
+// ✅ Recommended: Texture packing or reduced sampling
 float4 packedTex = tex2D(_PackedTex, uv);
 float4 tex1 = packedTex.rrra;
 float4 tex2 = packedTex.ggga;
 ```
 
-## 🎮 GPU型号对比
+## 🎮 GPU Model Comparison
 
-### Bifrost架构 (Mali-G71, G72, G76)
+### Bifrost Architecture (Mali-G71, G72, G76)
 
-- **特点**：传统的分离式处理单元
-- **优化重点**：算术运算优化
-- **显示信息**：Arithmetic单元统计
+- **Characteristics**: Traditional separate processing units
+- **Optimization Focus**: Arithmetic operation optimization
+- **Display Info**: Arithmetic unit statistics
 
-### Valhall架构 (Mali-G77, G78, G310, G510, G610, G710, G715)
+### Valhall Architecture (Mali-G77, G78, G310, G510, G610, G710, G715)
 
-- **特点**：并行处理引擎，更细分的单元统计
-- **优化重点**：FMA、CVT、SFU单元平衡
-- **显示信息**：详细的单元分解
+- **Characteristics**: Parallel processing engine with more detailed unit statistics
+- **Optimization Focus**: Balance FMA, CVT, SFU units
+- **Display Info**: Detailed unit breakdown
 
-## 🔍 故障排除
+## 🔍 Troubleshooting
 
-### 常见问题
+### Common Issues
 
-#### 1. "Mali Compiler文件不存在"
+#### 1. "Mali Compiler file does not exist"
 
-- **原因**：malioc.exe路径配置错误
-- **解决**：重新下载并安装Mali Offline Compiler，确认路径正确
+- **Cause**: Incorrect malioc.exe path configuration
+- **Solution**: Re-download and install Mali Offline Compiler, confirm correct path
 
-#### 2. "无法解析Shader文件"
+#### 2. "Cannot parse Shader file"
 
-- **原因**：不支持的Shader格式或复杂的Surface Shader
-- **解决**：使用标准的Unity Shader格式，避免过于复杂的宏定义
+- **Cause**: Unsupported Shader format or complex Surface Shader
+- **Solution**: Use standard Unity Shader format, avoid overly complex macro definitions
 
-#### 3. "编译失败"
+#### 3. "Compilation failed"
 
-- **原因**：HLSL到GLSL转换出错
-- **解决**：检查Shader语法，避免使用不支持的函数
+- **Cause**: HLSL to GLSL conversion error
+- **Solution**: Check Shader syntax, avoid using unsupported functions
 
-#### 4. Stack Spilling警告
+#### 4. Stack Spilling Warning
 
-- **原因**：寄存器使用过多
-- **解决**：减少局部变量，降低精度，简化计算逻辑
+- **Cause**: Excessive register usage
+- **Solution**: Reduce local variables, lower precision, simplify calculation logic
 
-### 调试技巧
+### Debugging Tips
 
-1. **启用详细输出**：在高级选项中开启详细输出模式
-2. **保存临时文件**：查看转换后的GLSL代码，定位转换问题
-3. **逐步简化**：从简单Shader开始，逐步增加复杂度
+1. **Enable Verbose Output**: Turn on verbose output mode in advanced options
+2. **Save Temporary Files**: View converted GLSL code to locate conversion issues
+3. **Gradual Simplification**: Start with simple Shaders, gradually increase complexity
 
-## 📈 性能基准
+## 📈 Performance Benchmarks
 
-### 推荐性能目标
+### Recommended Performance Targets
 
-| 指标      | 移动设备目标 | 高端设备目标 |
-| ------- | ------ | ------ |
-| 工作寄存器   | ≤16    | ≤32    |
-| 16位运算占比 | ≥60%   | ≥40%   |
-| 纹理采样数   | ≤2     | ≤4     |
-| 最长路径周期  | ≤50    | ≤100   |
+| Metric                  | Mobile Target | High-end Target |
+| ----------------------- | ------------- | --------------- |
+| Work Registers          | ≤16           | ≤32             |
+| 16-bit Arithmetic Ratio | ≥60%          | ≥40%            |
+| Texture Samples         | ≤2            | ≤4              |
+| Longest Path Cycles     | ≤50           | ≤100            |
 
-### GPU性能层级
+### GPU Performance Tiers
 
-| GPU型号         | 性能层级 | 适用场景      |
-| ------------- | ---- | --------- |
-| Mali-G71/G72  | 入门级  | 简单游戏，基础效果 |
-| Mali-G76/G77  | 中端   | 中等复杂度游戏   |
-| Mali-G78/G310 | 中高端  | 复杂游戏，丰富效果 |
-| Mali-G510+    | 高端   | 顶级游戏，高级效果 |
+| GPU Model     | Performance Tier | Use Case                         |
+| ------------- | ---------------- | -------------------------------- |
+| Mali-G71/G72  | Entry-level      | Simple games, basic effects      |
+| Mali-G76/G77  | Mid-range        | Medium complexity games          |
+| Mali-G78/G310 | Mid-high-end     | Complex games, rich effects      |
+| Mali-G510+    | High-end         | Top-tier games, advanced effects |
 
-## 📚 扩展资源
+## 📚 Extended Resources
 
-### ARM官方文档
+### ARM Official Documentation
 
-- [Mali GPU架构指南](https://developer.arm.com/documentation/102849/latest/)
-- [Mali Offline Compiler用户指南](https://developer.arm.com/documentation/101863/latest/)
-- [Mali GPU最佳实践](https://developer.arm.com/documentation/101897/latest/)
+- [Mali GPU Architecture Guide](https://developer.arm.com/documentation/102849/latest/)
+- [Mali Offline Compiler User Guide](https://developer.arm.com/documentation/101863/latest/)
+- [Mali GPU Best Practices](https://developer.arm.com/documentation/101897/latest/)
 
-### Unity优化资源
+### Unity Optimization Resources
 
-- [Unity Shader优化指南](https://docs.unity3d.com/Manual/SL-ShaderPerformance.html)
-- [移动平台图形优化](https://docs.unity3d.com/Manual/MobileOptimisation.html)
+- [Unity Shader Optimization Guide](https://docs.unity3d.com/Manual/SL-ShaderPerformance.html)
+- [Mobile Graphics Optimization](https://docs.unity3d.com/Manual/MobileOptimisation.html)
 
-## 🤝 技术支持
+## 🤝 Technical Support
 
-如果在使用过程中遇到问题，建议：
+If you encounter issues during use, we recommend:
 
-1. 查看Unity Console中的详细错误信息
-2. 启用"详细输出"模式获取更多信息
-3. 检查Mali Offline Compiler版本兼容性
-4. 确认Shader格式符合工具要求
+1. Check detailed error information in Unity Console
+2. Enable "Verbose Output" mode for more information
+3. Check Mali Offline Compiler version compatibility
+4. Ensure Shader format meets tool requirements
 
 ---
 
-**注意**：本工具基于ARM Mali Offline Compiler，需要有效的Mali Compiler安装才能正常工作。工具会自动处理大部分HLSL到GLSL的转换，但复杂的Shader可能需要手动调整。
+**Note**: This tool is based on ARM Mali Offline Compiler and requires a valid Mali Compiler installation to work properly. The tool automatically handles most HLSL to GLSL conversions, but complex Shaders may require manual adjustments.
